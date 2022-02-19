@@ -186,15 +186,13 @@ x_test = scal.transform(x_test)
 x_train = pca.fit_transform(x_train)
 x_test = pca.transform(x_test)
 
-print(x_train.shape)
-print(x_test.shape)
 mle = MLE()
 mle.train(x_train, y_train)
 perf = mle.performance(x_test, y_test)
 print("Performance MLE:", perf)
 
 knn = KKNclassifier(5)
-print(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 2))
+print("Performance kNN(Eudclidian):", knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 2))
 """
 splits = np.linspace(0.05, 0.55, 6)
 performances1 = []

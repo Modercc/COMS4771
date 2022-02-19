@@ -73,8 +73,8 @@ class KDTree:
         else:
            
             split, node = self.makeSplit(x)
-            left = [point for point in x if point[split] > node[split]]
-            right = [point for point in x if point[split] < node[split]]
+            left = [point for point in x if point[split] < node[split]]
+            right = [point for point in x if point[split] > node[split]]
             return KDNode(node, split, self.generate_kdTree(left), self.generate_kdTree(right))
     
     def makeSplit(self, x):
@@ -119,8 +119,7 @@ def search_path(kdtree, target, k, k_queue, dist_type):
         split = i[1]
         opposite_tree = i[2]
         distance_axis = abs(node[split] - target[split])
-        if distance_axis > radius + 0.2 and False:
-            print(distance_axis, radius)
+        if distance_axis > radius:
             break
         else:
             if dist_type == 1:
@@ -179,35 +178,99 @@ class KKNclassifier:
 mat = scipy.io.loadmat('digits.mat')
 x = mat['X']
 y = mat['Y']
-x = StandardScaler().fit_transform(x)
-pca = PCA(0.43)
-x_pca = pca.fit_transform(x)
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2)
+pca = PCA(n_components = 0.43)
+scal = StandardScaler()
+x_train = scal.fit_transform(x_train)
+x_test = scal.transform(x_test)
+x_train = pca.fit_transform(x_train)
+x_test = pca.transform(x_test)
 
-x_train, x_test, y_train, y_test = train_test_split(x_pca, y, test_size=0.2, random_state=30)
 print(x_train.shape)
+print(x_test.shape)
 mle = MLE()
 mle.train(x_train, y_train)
 perf = mle.performance(x_test, y_test)
-print("Performance ", perf)
-"""
-knn = KNearestNeighbors(x_train[:100], y_train[:100], n_neighbors=1)
-print("Test size: ", x_test.shape[0])
-print(knn.score(x_test, y_test))
-"""
+print("Performance MLE:", perf)
 
-classifier = KNeighborsClassifier(n_neighbors = 5)
-classifier.fit(x_train[:100], y_train[:100])
-y_pred = classifier.predict(x_test[:100])
-perf = 0
-for i in range(len(y_pred)):
-    if y_pred[i] == y_test[i]:
-        perf += 1
-perf /= len(y_pred)
-print("SKLearn: ", perf)
-distances, indices = classifier.kneighbors(x_test[7:8])
-print(distances)
 knn = KKNclassifier(5)
-print(knn.predict(x_train.tolist()[:1000], y_train.tolist()[:1000], x_test.tolist()[0:100], y_test.tolist()[0:100], 2))
+print(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 2))
+"""
+splits = np.linspace(0.05, 0.55, 6)
+performances1 = []
+performances2 = []
+performances3 = []
+for s in splits:
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=s)
+    x_train = x_train[:int(1000*(1-s))]
+    x_test = x_test[:int(1000*s)]
+    y_train = y_train[:int(1000*(1-s))]
+    y_test = y_test[:int(1000*s)]
+    print(x_test.shape)
+    print(x_test.shape)
+    pca = PCA(n_components = 0.43)
+    scal = StandardScaler()
+    x_train = scal.fit_transform(x_train)
+    x_test = scal.transform(x_test)
+    x_train = pca.fit_transform(x_train)
+    x_test = pca.transform(x_test)
+    print(s)
+    knn = KKNclassifier(5)
+    performances1.append(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 1))
+    performances2.append(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 2))
+    performances3.append(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 3))
+
+plt.plot(splits, performances1, label = "Manhattan")
+plt.plot(splits, performances2, label = "Euclidian")
+plt.plot(splits, performances3, label = "Chebyshev")
+plt.xlabel('Splits')
+plt.ylabel('Accuracy')
+plt.show()
+
+pca = PCA(n_components = 0.43)
+scal = StandardScaler()
+x_train = scal.fit_transform(x_train)
+x_test = scal.transform(x_test)
+x_train = pca.fit_transform(x_train)
+x_test = pca.transform(x_test)
+for i in range(1, 50, 4):
+    print(i)
+    knn = KKNclassifier(i)
+    performances1.append(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 1))
+    performances2.append(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 2))
+    performances3.append(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 3))
+
+plt.plot(k, performances1, label = "Manhattan")
+plt.plot(k, performances2, label = "Euclidian")
+plt.plot(k, performances3, label = "Chebyshev")
+plt.xlabel('K')
+plt.ylabel('Accuracy')
+plt.show()
+
+performancesMLE = []
+performancesKNN = []
+for s in splits:
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=s)
+    pca = PCA(n_components = 0.43)
+    scal = StandardScaler()
+    x_train = scal.fit_transform(x_train)
+    x_test = scal.transform(x_test)
+    x_train = pca.fit_transform(x_train)
+    x_test = pca.transform(x_test)
+    print(s)
+    mle = MLE()
+    mle.train(x_train, y_train)
+    performancesMLE.append(mle.performance(x_test, y_test))
+    knn = KKNclassifier(5)
+    performancesKNN.append(knn.predict(x_train.tolist(), y_train.tolist(), x_test.tolist(), y_test.tolist(), 2))
+
+plt.plot(splits, performancesMLE)
+plt.plot(splits, performancesKNN)
+plt.xlabel('Split')
+plt.ylabel('Accuracy')
+plt.show()
+"""
+    
 
 
 
